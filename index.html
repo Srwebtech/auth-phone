@@ -6,9 +6,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <h2>Phone Login</h2>
+  <h2>Phone Login (India)</h2>
 
-  <input id="phone" placeholder="+91 9876543210" />
+  <input id="phone" placeholder="Enter 10-digit mobile number" />
   <button onclick="sendOTP()">Send OTP</button>
 
   <div id="recaptcha-container"></div>
@@ -31,12 +31,25 @@
     const auth = firebase.auth();
 
     window.sendOTP = function () {
-      const phone = document.getElementById("phone").value;
-      const recaptcha = new firebase.auth.RecaptchaVerifier("recaptcha-container");
+      let phoneInput = document.getElementById("phone").value.trim();
+
+      // Validate Indian number length
+      if (!/^\d{10}$/.test(phoneInput)) {
+        alert("Enter a valid 10-digit mobile number");
+        return;
+      }
+
+      // Prepend +91 automatically
+      const phone = "+91" + phoneInput;
+
+      const recaptcha = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+        size: "invisible"
+      });
+
       auth.signInWithPhoneNumber(phone, recaptcha)
         .then((result) => {
           window.confirmationResult = result;
-          alert("OTP Sent!");
+          alert("OTP Sent to " + phone);
         })
         .catch((err) => alert(err));
     };
@@ -45,7 +58,8 @@
       const code = document.getElementById("otp").value;
       window.confirmationResult.confirm(code)
         .then((res) => {
-          alert("SUCCESS:" + res.user.phoneNumber);
+          alert("SUCCESS: " + res.user.phoneNumber);
+          // Send user data back to React Native
           window.ReactNativeWebView.postMessage(JSON.stringify({ uid: res.user.uid, phone: res.user.phoneNumber }));
         })
         .catch((err) => alert(err));
